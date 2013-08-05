@@ -4,6 +4,7 @@ Java REST API integration/implementation samples
 
 Requirements
 ------------------------
+* Java Netbeans EE edition
 * A valid MailUp account ( trial accounts allowed )
 * API application keys ( required only for final deployments )
 
