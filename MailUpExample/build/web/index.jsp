@@ -17,6 +17,10 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
         mailUp.retreiveAccessToken(request.getParameter("code"), response);
     }
 
+    if(request.getParameter("LogOnWithUsernamePassword") != null) {
+        mailUp.logOnWithUsernamePassword(request.getParameter("txtUsr"), request.getParameter("txtPwd"), response);
+    }
+    
     // Calling Method
     String callResult = "";
     if (request.getParameter("CallMethod") != null) { // CallMethod button clicked
@@ -50,7 +54,7 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             JSONArray arr = obj.getJSONArray("Items");
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject group = arr.getJSONObject(i);
-                if ("migo test import".equals(group.getString("Name"))) groupId = group.getInt("idGroup");
+                if ("test import".equals(group.getString("Name"))) groupId = group.getInt("idGroup");
             }
             
             exampleResult += "Given a default list id (use idList = 1), request for user visible groups<br/>GET "+url+" - OK<br/>";
@@ -59,13 +63,13 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             if (groupId == -1) {
                 groupId = 100;
                 url = mailUp.getConsoleEndpoint() + "/Console/List/1/Group";
-                String groupRequest = "{\"Deletable\":true,\"Name\":\"migo test import\",\"Notes\":\"test import\"}";
+                String groupRequest = "{\"Deletable\":true,\"Name\":\"test import\",\"Notes\":\"test import\"}";
                 result = mailUp.callMethod(url, "POST", groupRequest, ContentType.Json, response);
                 obj = new JSONObject(result);
                 arr = obj.getJSONArray("Items");
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject group = arr.getJSONObject(i);
-                    if ("migo test import".equals(group.getString("Name"))) groupId = group.getInt("idGroup");
+                    if ("test import".equals(group.getString("Name"))) groupId = group.getInt("idGroup");
                 }
             
                 exampleResult += "If the list does not contain a group named \"test import\", create it<br/>POST "+url+" - OK<br/>";              
@@ -438,6 +442,12 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
     <p>
         <input type="submit" name="LogOn" value="Sign in to MailUp"/>
     </p>
+    <p>
+        Username: <input type="text" name="txtUsr" value="type your MailUp username" style="width:400px;"/><br/>
+        Password: <input type="text" name="txtPwd" value="type your MailUp password" style="width:400px;"/><br/>
+        <input type="submit" name="LogOnWithUsernamePassword" value="Sign in to MailUp with username and password."/>
+    </p>
+    
     
     <p id="pAuthorization"><%= mailUp.getAccessToken()==null?"Unauthorized":("Authorized. Token: "+mailUp.getAccessToken())%></p><br /><br />
 

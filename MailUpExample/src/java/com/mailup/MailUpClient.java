@@ -13,6 +13,7 @@ import java.net.URL;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.codec.binary.Base64;
 
 /**
  *
@@ -190,6 +191,19 @@ public class MailUpClient {
         response.sendRedirect(url);
     }
 
+    public void logOnWithUsernamePassword(String username,String password,HttpServletResponse response) throws MailUpException
+    {
+        int statusCode = 0;
+        try
+        {
+        this.retreiveAccessToken(username, password, response);
+        }
+        catch (Exception ex)
+        {
+            throw new MailUpException(statusCode, ex.getMessage());
+        }
+    }
+    
     public String retreiveAccessToken(String code, HttpServletResponse response) throws MailUpException
     {
         int statusCode = 0;
@@ -225,11 +239,22 @@ public class MailUpClient {
         int statusCode = 0;
         try
         {
-            HttpURLConnection con = (HttpURLConnection)new URL(authorizationEndpoint + "?client_id=" + clientId + "&client_secret=" + clientSecret + "&response_type=code" +
-                "&username=" + login + "&password=" + password).openConnection();
-            con.setRequestMethod("GET");
+            String body = "client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=password" + "&username=" + login + "&password=" + password;
+            HttpURLConnection con = (HttpURLConnection)new URL(tokenEndpoint).openConnection();
+            con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            con.setRequestProperty("Content-Length", ""+body.length());
+            
+            byte[] auth =  String.format("{0}:{1}", this.clientId, this.clientSecret).getBytes();
+            con.setRequestProperty("Authorization", "Basic "+Base64.encodeBase64String(auth));
+            
+            con.setDoOutput(true);
+            DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+            wr.writeBytes(body);
+            wr.flush();
+            wr.close();
+            
             statusCode = con.getResponseCode();
-	
+            
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
             String inputLine;
             StringBuffer result = new StringBuffer();
@@ -240,10 +265,10 @@ public class MailUpClient {
             in.close();
  
             String resultStr = result.toString();
-
-            String code = extractJsonValue(resultStr, "code");
-
-            retreiveAccessToken(code, response);
+            accessToken = extractJsonValue(resultStr, "access_token");
+            refreshToken = extractJsonValue(resultStr, "refresh_token");
+            
+            saveToken(response);
         }
         catch (Exception ex)
         {
