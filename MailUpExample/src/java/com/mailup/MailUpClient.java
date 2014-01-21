@@ -24,8 +24,8 @@ public class MailUpClient {
     private String logonEndpoint = "https://services.mailup.com/Authorization/OAuth/LogOn";
     private String authorizationEndpoint = "https://services.mailup.com/Authorization/OAuth/Authorization";
     private String tokenEndpoint = "https://services.mailup.com/Authorization/OAuth/Token";
-    private String consoleEndpoint = "https://services.mailup.com/API/v1/Rest/ConsoleService.svc";
-    private String mailstatisticsEndpoint = "https://services.mailup.com/API/v1/Rest/MailStatisticsService.svc";
+    private String consoleEndpoint = "https://services.mailup.com/API/v1.1/Rest/ConsoleService.svc";
+    private String mailstatisticsEndpoint = "https://services.mailup.com/API/v1.1/Rest/MailStatisticsService.svc";
     
     private String clientId;
     private String clientSecret;
