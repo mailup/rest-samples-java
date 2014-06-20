@@ -8,8 +8,20 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
+
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -204,11 +216,53 @@ public class MailUpClient {
         }
     }
     
+    //------ JAVA 1.7.0 SSL Fix
+    
+    private void InitializeSSL() throws NoSuchAlgorithmException, KeyManagementException
+    {
+        SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(new KeyManager[0], new TrustManager[] {new DefaultTrustManager()}, new SecureRandom());
+        SSLContext.setDefault(ctx);
+        
+        HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
+
+        // Create all-trusting host name verifier
+        HostnameVerifier allHostsValid = new HostnameVerifier() {
+            @Override
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        };
+        
+        // Install the all-trusting host verifier
+        HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+    }
+    
+    private static class DefaultTrustManager implements X509TrustManager {
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {}
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {}
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return null;
+        }
+
+    }
+    
+    //------ JAVA 1.7.0 SSL Fix
+    
     public String retreiveAccessToken(String code, HttpServletResponse response) throws MailUpException
     {
         int statusCode = 0;
         try {
-            HttpURLConnection con = (HttpURLConnection)new URL(tokenEndpoint + "?code=" + code + "&grant_type=authorization_code").openConnection();
+            
+            InitializeSSL();
+            
+            HttpsURLConnection  con = (HttpsURLConnection )new URL(tokenEndpoint + "?code=" + code + "&grant_type=authorization_code").openConnection();
             con.setRequestMethod("GET");
             statusCode = con.getResponseCode();
 	
@@ -239,12 +293,14 @@ public class MailUpClient {
         int statusCode = 0;
         try
         {
+            InitializeSSL();
+            
             String body = "client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=password" + "&username=" + login + "&password=" + password;
-            HttpURLConnection con = (HttpURLConnection)new URL(tokenEndpoint).openConnection();
+            HttpsURLConnection  con = (HttpsURLConnection )new URL(tokenEndpoint).openConnection();
             con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             con.setRequestProperty("Content-Length", ""+body.length());
             
-            byte[] auth =  String.format("{0}:{1}", this.clientId, this.clientSecret).getBytes();
+            byte[] auth =  String.format("%s:%s", this.clientId, this.clientSecret).getBytes();
             con.setRequestProperty("Authorization", "Basic "+Base64.encodeBase64String(auth));
             
             con.setDoOutput(true);
@@ -282,7 +338,9 @@ public class MailUpClient {
         int statusCode = 0;
         try
         {
-            HttpURLConnection con = (HttpURLConnection)new URL(tokenEndpoint).openConnection();
+            InitializeSSL();
+            
+            HttpsURLConnection  con = (HttpsURLConnection )new URL(tokenEndpoint).openConnection();
             con.setRequestMethod("POST");
 
             String body = "client_id=" + clientId + "&client_secret=" + clientSecret +
@@ -328,11 +386,13 @@ public class MailUpClient {
     private String callMethod(String url, String verb, String body, String contentType, boolean refresh, HttpServletResponse response) throws MailUpException
     {
         String resultStr = "";
-        HttpURLConnection con = null;
+        HttpsURLConnection  con = null;
         int statusCode = 0;
         try
         {
-            con = (HttpURLConnection)new URL(url).openConnection();
+            InitializeSSL();
+            
+            con = (HttpsURLConnection )new URL(url).openConnection();
             con.setRequestMethod(verb);
             con.setRequestProperty("Content-Type", contentType);
             //con.setRequestProperty("Content-Length", "0");
@@ -425,4 +485,8 @@ public class MailUpClient {
         response.addCookie(cookieAccess);
         response.addCookie(cookieRefresh);
     }
+    
+    
+
 }
+
