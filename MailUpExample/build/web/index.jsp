@@ -66,11 +66,13 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
                 String groupRequest = "{\"Deletable\":true,\"Name\":\"test import\",\"Notes\":\"test import\"}";
                 result = mailUp.callMethod(url, "POST", groupRequest, ContentType.Json, response);
                 obj = new JSONObject(result);
-                arr = obj.getJSONArray("Items");
+                if ("test import".equals(obj.getString("Name"))) groupId = obj.getInt("idGroup");
+                
+                /*arr = obj.getJSONArray("Items");
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject group = arr.getJSONObject(i);
-                    if ("test import".equals(group.getString("Name"))) groupId = group.getInt("idGroup");
-                }
+                    if ("test import".equals(obj.getString("Name"))) groupId = obj.getInt("idGroup");
+                }*/
             
                 exampleResult += "If the list does not contain a group named \"test import\", create it<br/>POST "+url+" - OK<br/>";              
             }
@@ -195,7 +197,8 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             // Get the available template list
             String url = mailUp.getConsoleEndpoint() + "/Console/List/1/Templates";
             String result = mailUp.callMethod(url, "GET", null, ContentType.Json, response);
-            JSONArray arr = new JSONArray(result);
+            JSONObject obj = new JSONObject(result);
+            JSONArray arr = obj.getJSONArray("Items");
             
             exampleResult += "Get the available template list<br/>GET "+url+" - OK<br/>";
             
@@ -205,16 +208,16 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             // Create the new message
             url = mailUp.getConsoleEndpoint() + "/Console/List/1/Email/Template/" + templateId;
             result = mailUp.callMethod(url, "POST", null, ContentType.Json, response);
-            JSONObject obj = new JSONObject(result);
+            obj = new JSONObject(result);
             
             exampleResult += "Create the new message<br/>POST "+url+" - OK<br/>";
-            
+            /*
             arr = obj.getJSONArray("Items");
             if (arr.length() > 0) {
                 JSONObject email = arr.getJSONObject(0);
                 emailId = email.getInt("idMessage");
-            }
-            session.setAttribute("emailId", new Integer(emailId));
+            }*/
+            session.setAttribute("emailId", new Integer(obj.getInt("idMessage")));
             
             // Request for messages list
             url = mailUp.getConsoleEndpoint() + "/Console/List/1/Emails";
@@ -236,7 +239,7 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
         try {
             
             // Image bytes can be obtained from file, database or any other source
-            URL img = new URL("http://images.apple.com/home/images/ios_title_small.png"); 
+            URL img = new URL("http://www.mailup.com/images/pc2010-logo-h.png"); 
             InputStream str = img.openStream();
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
@@ -254,13 +257,13 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             
             // Upload an image
             String url = mailUp.getConsoleEndpoint() + "/Console/List/1/Images";
-            String imageRequest = "{\"Base64Data\":\""+base64+"\",\"Name\":\"Avatar\"}";
+            String imageRequest = "{\"Base64Data\":\""+base64+"\",\"Name\":\"Avatar.png\"}";
             String result = mailUp.callMethod(url, "POST", imageRequest, ContentType.Json, response); 
             
             exampleResult += "Upload an image<br/>POST "+url+" - OK<br/>";
             
             // Get the images available
-            url = mailUp.getConsoleEndpoint() + "/Console/Images";
+            url = mailUp.getConsoleEndpoint() + "/Console/List/1/Images";
             result = mailUp.callMethod(url, "GET", null, ContentType.Json, response);
             
             String imgSrc = "";
@@ -270,10 +273,10 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             exampleResult += "Get the images available<br/>GET "+url+" - OK<br/>";
             
             // Create and save "hello" message
-            String message = "<html><body><p>Hello</p><img src=\""+imgSrc+"\" /></body></html>";
+            String message = "<html><body><p>Hello</p><img src=\"http://"+imgSrc.replace("\\","/")+"\" /></body></html>";
             
             JSONObject email = new JSONObject();
-            email.put("Subject", "Test Message Objective-C");
+            email.put("Subject", "Test Message JAVA");
             email.put("idList", 1);
             email.put("Content", message);
             email.put("Embed", true);
@@ -294,13 +297,14 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             JSONObject obj = new JSONObject(result);
             
             exampleResult += "Create and save \"hello\" message<br/>POST "+url+" - OK<br/>";
-            
+            /*
             arr = obj.getJSONArray("Items");
             if (arr.length() > 0) {
                 JSONObject msg = arr.getJSONObject(0);
                 emailId = msg.getInt("idMessage");
-            }
-            session.setAttribute("emailId", new Integer(emailId));
+            }*/
+            session.setAttribute("emailId", new Integer(obj.getInt("idMessage")));
+            emailId = obj.getInt("idMessage");
             
             // Add an attachment
             String attachment = "QmFzZSA2NCBTdHJlYW0="; // Base64 String
@@ -333,17 +337,19 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             // Create a new tag
             String url = mailUp.getConsoleEndpoint() + "/Console/List/1/Tag";
             String result = mailUp.callMethod(url, "POST", "\"test tag\"", ContentType.Json, response);
-            JSONArray arr = new JSONArray(result); 
+            JSONObject obj = new JSONObject(result);
             
             exampleResult += "Create a new tag<br/>POST "+url+" - OK<br/>";
             
             int tagId = -1;
-            if (arr.length() > 0) tagId = arr.getJSONObject(0).getInt("Id");
+            //if (arr.length() > 0) tagId = arr.getJSONObject(0).getInt("Id");
+            
+            tagId = obj.getInt("Id");
             
             // Pick up a message and retrieve detailed informations
             url = mailUp.getConsoleEndpoint() + "/Console/List/1/Email/" + emailId;
             result = mailUp.callMethod(url, "GET", null, ContentType.Json, response);
-            JSONObject obj = new JSONObject(result);
+            obj = new JSONObject(result);
             
             exampleResult += "Pick up a message and retrieve detailed informations<br/>GET "+url+" - OK<br/>";
             
