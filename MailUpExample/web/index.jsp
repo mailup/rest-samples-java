@@ -239,7 +239,7 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
         try {
             
             // Image bytes can be obtained from file, database or any other source
-            URL img = new URL("http://www.mailup.com/images/pc2010-logo-h.png"); 
+            URL img = new URL("https://www.google.it/images/srpr/logo11w.png"); 
             InputStream str = img.openStream();
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
@@ -415,8 +415,7 @@ private static String MAILUP_CALLBACK_URI = "http://127.0.0.1:8080/MailUpExample
             
             // Request (to MailStatisticsService.svc) for paged message views list for the previously sent message
             int hours = 4;
-            String url = mailUp.getMailstatisticsEndpoint() + "/Message/" + emailId + "/Views/List/Last/" + hours +
-                     "?pageSize=5&pageNum=0";
+            String url = mailUp.getMailstatisticsEndpoint() + "/Message/" + emailId + "/List/Views?pageSize=5&pageNum=0";
             String result = mailUp.callMethod(url, "GET", null, ContentType.Json, response);
             
             exampleResult += "Request (to MailStatisticsService.svc) for paged message views list for the previously sent message<br/>GET "+url+" - OK<br/>";
