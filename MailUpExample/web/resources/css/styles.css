@@ -1,0 +1,106 @@
+h3 {
+    color: #174222;    
+}
+
+#load{
+    width:100%;
+    height:100%;
+    position:fixed;
+    z-index:9999;
+    background:url("../images/loading.gif") no-repeat center center transparent;
+}
+
+.example-body {
+    word-break: break-all;
+    height: auto;
+    min-height: 34px;
+    max-height: 400px;
+    overflow-y: auto;   
+}
+
+.example-result {
+    margin: 15px 0 0 0;
+}
+
+.example-result-string {
+    margin: 15px 0 0 0;
+}
+
+.panel-default {
+    border-color: #ddd; 
+}
+
+.bd-pageheader {
+    padding: 2rem 15px;
+    margin-bottom: 1.5rem;
+    color: #c0dac0;
+    text-align: center;
+    background-color: #327040; 
+}
+
+.errorAnswer {
+    color: #198534;
+    margin-top:10px;
+}
+
+.spoiler-wrap { 
+    background:#fff;
+    margin: 0 0 1px;
+    border:none;
+}
+
+.spoiler-head {
+    background:#efefef;
+    cursor:pointer;
+    padding:5px;
+    margin-top:10px;
+    color:#174222;
+    text-decoration: underline;
+}
+
+.spoiler-body {
+    padding:5px 0 0 0;
+}  
+
+.spoiler-wrap.disabled .spoiler-body {
+    display:none;
+    margin-top:5px;
+}
+
+.spoiler-wrap.active {
+    border:none;
+}
+
+.spoiler-wrap.active .spoiler-head {
+    background:rgb(211, 224, 207);
+} 
+
+.auth-panel {
+    height: 240px;
+    margin-top: 10px;
+}
+
+.auth-panel.panel-default > .panel-heading {
+    border: none;
+    position: relative;
+    top: -10px;
+    width: auto;
+    display: inline;
+    padding: 6px;
+    margin: 0;
+    left: 20px;
+    background-color: inherit;
+}
+
+.auth-panel-sign {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.right {
+    text-align: right;
+}
+
+.display-none {
+    display: none;
+}
