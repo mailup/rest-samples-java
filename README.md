@@ -6,15 +6,12 @@ Requirements
 ------------------------
 * Java Netbeans EE edition
 * A valid MailUp account ( trial accounts allowed )
-* Your own API application keys [1] 
+* Your own API application keys
 
 notes : 
-* For further API information, please visit [MailUp REST API Help] [2] 
-* For MailUp trial account activation please go to [MailUp web site] [3] 
-
-  [1]: http://help.mailup.com/display/mailupapi/Get+a+Developer+Account        "Get API application keys" 
-  [2]: http://help.mailup.com/display/mailupapi/REST+API        "MailUp REST API Help"
-  [3]: http://www.mailup.com/p/pc/mailup-free-trial-d44.htm        "MailUp web site"  
+* For further API information, please visit [MailUp REST API Help](http://help.mailup.com/display/mailupapi/REST+API) 
+* For MailUp trial account activation please go to [MailUp web site](http://www.mailup.com/p/pc/mailup-free-trial-d44.htm)
+* For further API application keys information please go to [Get API application keys](http://help.mailup.com/display/mailupapi/Get+a+Developer+Account)
   
 Samples overview 
 ------------------------
@@ -42,9 +39,7 @@ Debugging tool
 
 Notes
 ------------------------
-To learn more about API keys and how to get them, please refer to [MailUp REST API Keys and endpoints] [4] 
-
-  [4]: http://help.mailup.com/display/mailupapi/All+API+Keys+and+Endpoints+in+one+page        "MailUp REST API Keys and endpoints"
+To learn more about API keys and how to get them, please refer to [MailUp REST API Keys and endpoints](http://help.mailup.com/display/mailupapi/All+API+Keys+and+Endpoints+in+one+page) 
 
 Revision history
 ------------------------
