@@ -15,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Date;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
@@ -26,24 +27,26 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
+import org.json.JSONObject;
 
 /**
  *
  * @author sergeiinyushkin
  */
 public class MailUpClient {
-    
+
     private String logonEndpoint = "https://services.mailup.com/Authorization/OAuth/LogOn";
     private String authorizationEndpoint = "https://services.mailup.com/Authorization/OAuth/Authorization";
     private String tokenEndpoint = "https://services.mailup.com/Authorization/OAuth/Token";
     private String consoleEndpoint = "https://services.mailup.com/API/v1.1/Rest/ConsoleService.svc";
     private String mailstatisticsEndpoint = "https://services.mailup.com/API/v1.1/Rest/MailStatisticsService.svc";
-    
+
     private String clientId;
     private String clientSecret;
     private String callbackUri;
     private String accessToken;
     private String refreshToken;
+    private int expiresIn;
 
     /**
      * @return the logonEndpoint
@@ -184,11 +187,26 @@ public class MailUpClient {
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
-    
+
+    /**
+     * @return the expiresIn
+     */
+    public int getExpiresIn() {
+        return expiresIn;
+    }
+
+    /**
+     * @param expiresIn the expiresIn to set
+     */
+    public void setExpiresIn(int expiresIn) {
+        this.expiresIn = expiresIn;
+    }
+
     public MailUpClient(String clientId, String clientSecret, String callbackUri, HttpServletRequest request) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.callbackUri = callbackUri;
+
         loadToken(request);
     }
 
@@ -197,33 +215,26 @@ public class MailUpClient {
         return url;
     }
 
-    public void logOn(HttpServletResponse response) throws IOException
-    {
+    public void logOn(HttpServletResponse response) throws IOException {
         String url = getLogOnUri();
         response.sendRedirect(url);
     }
 
-    public void logOnWithUsernamePassword(String username,String password,HttpServletResponse response) throws MailUpException
-    {
+    public void logOnWithUsernamePassword(String username, String password, HttpServletResponse response) throws MailUpException {
         int statusCode = 0;
-        try
-        {
-        this.retreiveAccessToken(username, password, response);
-        }
-        catch (Exception ex)
-        {
+        try {
+            this.retreiveAccessToken(username, password, response);
+        } catch (Exception ex) {
             throw new MailUpException(statusCode, ex.getMessage());
         }
     }
-    
+
     //------ JAVA 1.7.0 SSL Fix
-    
-    private void InitializeSSL() throws NoSuchAlgorithmException, KeyManagementException
-    {
+    private void InitializeSSL() throws NoSuchAlgorithmException, KeyManagementException {
         SSLContext ctx = SSLContext.getInstance("TLS");
-        ctx.init(new KeyManager[0], new TrustManager[] {new DefaultTrustManager()}, new SecureRandom());
+        ctx.init(new KeyManager[0], new TrustManager[]{new DefaultTrustManager()}, new SecureRandom());
         SSLContext.setDefault(ctx);
-        
+
         HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
 
         // Create all-trusting host name verifier
@@ -233,18 +244,20 @@ public class MailUpClient {
                 return true;
             }
         };
-        
+
         // Install the all-trusting host verifier
         HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
     }
-    
+
     private static class DefaultTrustManager implements X509TrustManager {
 
         @Override
-        public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {}
+        public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+        }
 
         @Override
-        public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {}
+        public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+        }
 
         @Override
         public X509Certificate[] getAcceptedIssuers() {
@@ -252,155 +265,96 @@ public class MailUpClient {
         }
 
     }
-    
+
     //------ JAVA 1.7.0 SSL Fix
-    
-    public String retreiveAccessToken(String code, HttpServletResponse response) throws MailUpException
-    {
+    public String retreiveAccessToken(String code, HttpServletResponse response) throws MailUpException {
         int statusCode = 0;
         try {
-            
+
             InitializeSSL();
-            
-            HttpsURLConnection  con = (HttpsURLConnection )new URL(tokenEndpoint + "?code=" + code + "&grant_type=authorization_code").openConnection();
+
+            HttpsURLConnection con = (HttpsURLConnection) new URL(tokenEndpoint + "?code=" + code + "&grant_type=authorization_code").openConnection();
             con.setRequestMethod("GET");
+
             statusCode = con.getResponseCode();
-	
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer result = new StringBuffer();
- 
-            while ((inputLine = in.readLine()) != null) {
-		result.append(inputLine);
-            }
-            in.close();
- 
-            String resultStr = result.toString();
-            accessToken = extractJsonValue(resultStr, "access_token");
-            refreshToken = extractJsonValue(resultStr, "refresh_token");
-            
-            saveToken(response);
-        }
-        catch (Exception ex)
-        {
+            extractAndSaveTokenInfo(con, response);
+        } catch (Exception ex) {
             throw new MailUpException(statusCode, ex.getMessage());
         }
         return accessToken;
     }
 
-    public String retreiveAccessToken(String login, String password, HttpServletResponse response) throws MailUpException
-    {
+    public String retreiveAccessToken(String login, String password, HttpServletResponse response) throws MailUpException {
         int statusCode = 0;
-        try
-        {
+        try {
             InitializeSSL();
-            
+
             String body = "client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=password" + "&username=" + login + "&password=" + password;
-            HttpsURLConnection  con = (HttpsURLConnection )new URL(tokenEndpoint).openConnection();
+            HttpsURLConnection con = (HttpsURLConnection) new URL(tokenEndpoint).openConnection();
             con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            con.setRequestProperty("Content-Length", ""+body.length());
-            
-            byte[] auth =  String.format("%s:%s", this.clientId, this.clientSecret).getBytes();
-            con.setRequestProperty("Authorization", "Basic "+Base64.encodeBase64String(auth));
-            
+            con.setRequestProperty("Content-Length", "" + body.length());
+
+            byte[] auth = String.format("%s:%s", this.clientId, this.clientSecret).getBytes();
+            con.setRequestProperty("Authorization", "Basic " + Base64.encodeBase64String(auth));
+
             con.setDoOutput(true);
             DataOutputStream wr = new DataOutputStream(con.getOutputStream());
             wr.writeBytes(body);
             wr.flush();
             wr.close();
-            
+
             statusCode = con.getResponseCode();
-            
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer result = new StringBuffer();
- 
-            while ((inputLine = in.readLine()) != null) {
-		result.append(inputLine);
-            }
-            in.close();
- 
-            String resultStr = result.toString();
-            accessToken = extractJsonValue(resultStr, "access_token");
-            refreshToken = extractJsonValue(resultStr, "refresh_token");
-            
-            saveToken(response);
-        }
-        catch (Exception ex)
-        {
+            extractAndSaveTokenInfo(con, response);
+        } catch (Exception ex) {
             throw new MailUpException(statusCode, ex.getMessage());
         }
         return accessToken;
     }
 
-    public String refreshAccessToken(HttpServletResponse response) throws MailUpException
-    {
+    public String refreshAccessToken(HttpServletResponse response) throws MailUpException {
         int statusCode = 0;
-        try
-        {
+        try {
             InitializeSSL();
-            
-            HttpsURLConnection  con = (HttpsURLConnection )new URL(tokenEndpoint).openConnection();
+
+            HttpsURLConnection con = (HttpsURLConnection) new URL(tokenEndpoint).openConnection();
             con.setRequestMethod("POST");
 
-            String body = "client_id=" + clientId + "&client_secret=" + clientSecret +
-                "&refresh_token=" + refreshToken + "&grant_type=refresh_token";
+            String body = "client_id=" + clientId + "&client_secret=" + clientSecret + "&refresh_token=" + refreshToken + "&grant_type=refresh_token";
             con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            con.setRequestProperty("Content-Length", ""+body.length());
-            
+            con.setRequestProperty("Content-Length", "" + body.length());
+
             con.setDoOutput(true);
             DataOutputStream wr = new DataOutputStream(con.getOutputStream());
             wr.writeBytes(body);
             wr.flush();
             wr.close();
-            
+
             statusCode = con.getResponseCode();
-            
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer result = new StringBuffer();
- 
-            while ((inputLine = in.readLine()) != null) {
-		result.append(inputLine);
-            }
-            in.close();
- 
-            String resultStr = result.toString();
-            accessToken = extractJsonValue(resultStr, "access_token");
-            refreshToken = extractJsonValue(resultStr, "refresh_token");
-            
-            saveToken(response);
-        }
-        catch (Exception ex)
-        {
+            extractAndSaveTokenInfo(con, response);
+        } catch (Exception ex) {
             throw new MailUpException(statusCode, ex.getMessage());
         }
         return accessToken;
     }
 
-    public String callMethod(String url, String verb, String body, String contentType, HttpServletResponse response) throws MailUpException
-    {
+    public String callMethod(String url, String verb, String body, String contentType, HttpServletResponse response) throws MailUpException {
         return callMethod(url, verb, body, contentType, true, response);
     }
 
-    private String callMethod(String url, String verb, String body, String contentType, boolean refresh, HttpServletResponse response) throws MailUpException
-    {
+    private String callMethod(String url, String verb, String body, String contentType, boolean refresh, HttpServletResponse response) throws MailUpException {
         String resultStr = "";
-        HttpsURLConnection  con = null;
+        HttpsURLConnection con = null;
         int statusCode = 0;
-        try
-        {
+        try {
             InitializeSSL();
-            
-            con = (HttpsURLConnection )new URL(url).openConnection();
+
+            con = (HttpsURLConnection) new URL(url).openConnection();
             con.setRequestMethod(verb);
             con.setRequestProperty("Content-Type", contentType);
-            //con.setRequestProperty("Content-Length", "0");
             con.setRequestProperty("Accept", contentType);
             con.setRequestProperty("Authorization", "Bearer " + accessToken);
-            
+
             if (body != null && !"".equals(body)) {
-                //con.setRequestProperty("Content-Length", ""+body.length());
                 con.setDoOutput(true);
                 DataOutputStream wr = new DataOutputStream(con.getOutputStream());
                 wr.writeBytes(body);
@@ -414,79 +368,84 @@ public class MailUpClient {
             }
 
             statusCode = con.getResponseCode();
-            
+
             if (statusCode == 401 && refresh) {
                 refreshAccessToken(response);
                 return callMethod(url, verb, body, contentType, false, response);
             }
-            
+
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
             String inputLine;
             StringBuffer result = new StringBuffer();
- 
+
             while ((inputLine = in.readLine()) != null) {
-		result.append(inputLine);
+                result.append(inputLine);
             }
             in.close();
- 
+
             resultStr = result.toString();
-        }
-        catch (IOException iex)
-        {
-            try
-            {
+        } catch (IOException iex) {
+            try {
                 statusCode = con.getResponseCode();
                 if (statusCode == 401 && refresh) {
                     refreshAccessToken(response);
                     return callMethod(url, verb, body, contentType, false, response);
-                } else throw new MailUpException(statusCode, iex.getMessage());
-            }
-            catch (Exception ex)
-            {
+                } else {
+                    throw new MailUpException(statusCode, iex.getMessage());
+                }
+            } catch (Exception ex) {
                 throw new MailUpException(statusCode, ex.getMessage());
-            } 
-        }
-        catch (Exception ex)
-        {
+            }
+        } catch (Exception ex) {
             throw new MailUpException(statusCode, ex.getMessage());
         }
+
+        //TODO: updateExpiresIn();
         return resultStr;
     }
 
-    private String extractJsonValue(String json, String name)
-    {
-        String delim = "\"" + name + "\":\"";
-        int start = json.indexOf(delim) + delim.length();
-        int end = json.indexOf("\"", start + 1);
-        if (end > start && start > -1 && end > -1) return json.substring(start, end);
-        else return "";
+    private void extractAndSaveTokenInfo(HttpsURLConnection con, HttpServletResponse response) throws Exception {
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuilder result = new StringBuilder();
+
+        while ((inputLine = in.readLine()) != null) {
+            result.append(inputLine);
+        }
+        in.close();
+
+        JSONObject obj = new JSONObject(result.toString());
+
+        accessToken = obj.getString("access_token");
+        refreshToken = obj.getString("refresh_token");
+        expiresIn = obj.getInt("expires_in");
+
+        // set cookies
+        Cookie cookieAccess = new Cookie("access_token", accessToken);
+        cookieAccess.setMaxAge(expiresIn);
+        response.addCookie(cookieAccess);
+
+        Cookie cookieRefresh = new Cookie("refresh_token", refreshToken);
+        cookieRefresh.setMaxAge(expiresIn);
+        response.addCookie(cookieRefresh);
+
+        Cookie cookieAccessExpire = new Cookie("access_token_expire", String.valueOf((new Date()).getTime() + expiresIn * 1000));
+        cookieAccessExpire.setMaxAge(expiresIn);
+        response.addCookie(cookieAccessExpire);
     }
 
-    public void loadToken(HttpServletRequest request)
-    {
+    private void loadToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
-        if(cookies != null) {
-            for (int i = 0; i < cookies.length; i++){
+        if (cookies != null) {
+            for (int i = 0; i < cookies.length; i++) {
                 Cookie cookie = cookies[i];
-                if ("access_token".equals(cookie.getName())) accessToken = cookie.getValue();
-                if ("refresh_token".equals(cookie.getName())) refreshToken = cookie.getValue();
+                if ("access_token".equals(cookie.getName())) {
+                    accessToken = cookie.getValue();
+                }
+                if ("refresh_token".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                }
             }
         }
     }
-
-    public void saveToken(HttpServletResponse response)
-    {
-        Cookie cookieAccess = new Cookie("access_token", accessToken);
-        Cookie cookieRefresh = new Cookie("refresh_token", refreshToken);
-
-        cookieAccess.setMaxAge(60*60*24); 
-        cookieRefresh.setMaxAge(60*60*24); 
-
-        response.addCookie(cookieAccess);
-        response.addCookie(cookieRefresh);
-    }
-    
-    
-
 }
-
