@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import java.net.URL;
+import java.net.URLEncoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -289,7 +290,12 @@ public class MailUpClient {
         try {
             InitializeSSL();
 
-            String body = "client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=password" + "&username=" + login + "&password=" + password;
+            String body = "client_id=" + clientId
+                    + "&client_secret=" + clientSecret
+                    + "&grant_type=password"
+                    + "&username=" + URLEncoder.encode(login, "UTF-8")
+                    + "&password=" + URLEncoder.encode(password, "UTF-8");
+
             HttpsURLConnection con = (HttpsURLConnection) new URL(tokenEndpoint).openConnection();
             con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             con.setRequestProperty("Content-Length", "" + body.length());
