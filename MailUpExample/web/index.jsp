@@ -1,5 +1,4 @@
-<%@page contentType="text/html" import="com.mailup.*,org.json.*,java.net.*,java.io.*,org.apache.commons.codec.binary.*" pageEncoding="UTF-8"%>
-<%@page import="java.util.ResourceBundle" %>
+<%@page contentType="text/html; charset=UTF-8" import="com.mailup.*,org.json.*,java.net.*,java.io.*,org.apache.commons.codec.binary.*,java.util.ResourceBundle" pageEncoding="UTF-8"%>
 
 <%!
     private static String TEMPLATE_HEADER = "<div class=\"spoiler-wrap disabled\">\n"
@@ -39,6 +38,7 @@
             resource.getString("mailup.client.id"),
             resource.getString("mailup.client.secret"),
             resource.getString("mailup.callback.uri"), request);
+    request.setCharacterEncoding("UTF-8");
 
     request.setAttribute("mailUp", mailUp);
     request.setAttribute("idList", resource.getString("mailup.id.list"));
