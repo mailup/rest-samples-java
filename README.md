@@ -20,7 +20,7 @@ This project encloses a short list of "ready to use" samples, which represent so
 * Sample 1   - Importing recipients into a new group
 * Sample 2   - Unsubscribing a recipient from a group
 * Sample 3   - Updating the recipient's profile data
-* Sample 4   - Creating a message from a custom template (at least one template must be available in list 1)
+* Sample 4   - Creating a message from a custom template (deprecated)
 * Sample 5   - Building a message with images and attachments
 * Sample 6   - Tagging an email message
 * Sample 7   - Sending an email message
